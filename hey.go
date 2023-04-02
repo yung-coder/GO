@@ -3,5 +3,5 @@ package main
 import "fmt"
 
 func main() {
-    fmt.Println("Backl to work")
+    fmt.Println("Installing arch hope it goes good")
 }
