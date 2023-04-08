@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
 // Model  for course  -- file
@@ -37,7 +37,28 @@ func (c *Course) IsEmpty() bool {
 }
 
 func main() {
+	fmt.Println("API CALLING")
+	r := mux.NewRouter()
 
+	courses = append(courses, Course{CourseId: "2", CourseName: "Reactjs", CoursePrice: 299, Author: &Author{
+		Fullname: "Saksam chandel",
+		Website:  "chandel.social",
+	}})
+	courses = append(courses, Course{CourseId: "4", CourseName: "MERN", CoursePrice: 199, Author: &Author{
+		Fullname: "jack",
+		Website:  "reddit",
+	}})
+
+	// routing
+	r.HandleFunc("/", serveHome).Methods("GET")
+	r.HandleFunc("/courses", getALLCourses).Methods("GET")
+	r.HandleFunc("/course/{id}", getOneCourse).Methods("GET")
+	r.HandleFunc("/course", createOneCourse).Methods("POST")
+	r.HandleFunc("/course/{id}", updateOneCourse).Methods("PUT")
+	r.HandleFunc("/course/{id}", DeletOneCourse).Methods("DELETE")
+
+	// listen to port
+	log.Fatal(http.ListenAndServe(":3000", r))
 }
 
 // controllers - file
@@ -85,18 +106,24 @@ func createOneCourse(w http.ResponseWriter, r *http.Request) {
 
 	// {}
 
-	var course Course
-	_ = json.NewDecoder(r.Body).Decode(&course)
-	if course.IsEmpty() {
+	var NewCourse Course
+	_ = json.NewDecoder(r.Body).Decode(&NewCourse)
+
+	if NewCourse.IsEmpty() {
 		json.NewEncoder(w).Encode("No Data inside it")
 		return
 	}
-
+	for _, course := range courses {
+		if course.CourseName == NewCourse.CourseName {
+			json.NewEncoder(w).Encode("Course name already exists")
+			return
+		}
+	}
 	// generate unique id , string
 	rand.Seed(time.Now().UnixNano())
-	course.CourseId = strconv.Itoa(rand.Intn(100))
-	courses = append(courses, course)
-	json.NewEncoder(w).Encode(course)
+	NewCourse.CourseId = strconv.Itoa(rand.Intn(100))
+	courses = append(courses, NewCourse)
+	json.NewEncoder(w).Encode(NewCourse)
 	return
 
 }
