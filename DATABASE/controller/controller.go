@@ -5,16 +5,18 @@ import (
 	model "db/models"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"net/http"
 )
 
-const connectionString = "mongodb+srv://rmpschandel74:saksham123@godb.mttchzq.mongodb.net/?retryWrites=true&w=majority"
 const dbName = "netflix"
 const colName = "watchlist"
 
@@ -23,7 +25,7 @@ var collection *mongo.Collection
 // connect with mong db
 
 func init() {
-	clientOption := options.Client().ApplyURI(connectionString)
+	clientOption := options.Client().ApplyURI(goDotEnvVariable("MONGO_URI"));
 	client, err := mongo.Connect(context.TODO(), clientOption)
 
 	if err != nil {
@@ -35,6 +37,18 @@ func init() {
 
 	fmt.Println("Collection instance is ready")
 }
+
+func goDotEnvVariable(key string) string {
+
+	err := godotenv.Load(".env")
+  
+	if err != nil {
+	  log.Fatalf("Error loading .env file")
+	}
+  
+	return os.Getenv(key)
+  }
+  
 
 // MOMGO db helpers
 
