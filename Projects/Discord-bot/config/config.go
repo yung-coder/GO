@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -19,7 +23,6 @@ type configStruct struct {
 }
 
 func ReadConfig() error {
-	fmt.Println("Reading config file ...")
 
 	file, err := ioutil.ReadFile("./config.json")
 
@@ -28,8 +31,6 @@ func ReadConfig() error {
 		return err
 	}
 
-	fmt.Println(string(file))
-
 	err = json.Unmarshal(file, &config)
 
 	if err != nil {
@@ -37,9 +38,20 @@ func ReadConfig() error {
 		return err
 	}
 
-	Token = config.Token
+	Token = goDotEnvVariable("BOT_KEY")
 	BotPrefix = config.BotPrefix
 
 	return nil
 
+}
+
+func goDotEnvVariable(key string) string {
+
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
 }
