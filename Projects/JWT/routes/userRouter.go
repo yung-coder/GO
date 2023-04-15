@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"JWT/controllers"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gofiber/fiber/middleware"
 )
@@ -8,6 +10,6 @@ import (
 
 func  UserRoutes(incomingRoutes *gin.Engine){
 	incomingRoutes.Use(middleware.Authenticate());
-	incomingRoutes.Use("/users", controller.GetUsers());
-	incomingRoutes.Use("/users/:user_id" , controller.GetUser());
+	incomingRoutes.Use("/users", controllers.GetUsers());
+	incomingRoutes.Use("/users/:user_id" , controllers.GetUser());
 }
