@@ -61,7 +61,7 @@ func Signup() gin.HandlerFunc {
 			return
 		}
 
-		count1, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+		count, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
 
 		defer cancel()
 
@@ -73,14 +73,14 @@ func Signup() gin.HandlerFunc {
 		password := HashPassword(*user.Password)
 		user.Password = &password
 
-		count2, err := userCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
+		count, err = userCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "While counting  phone"})
 			return
 		}
 
-		if count1 > 0 || count2 > 0 {
+		if count > 0 {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Account already exists"})
 		}
 
