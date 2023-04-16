@@ -6,13 +6,21 @@ import (
 
 func main() {
 	mychanndel := make(chan string)
+	mychanndel2 := make(chan string)
 
 	go func() {
 		mychanndel <- "data"
 	}()
 
-	msg := <-mychanndel
+	go func() {
+		mychanndel2 <- "data2"
+	}()
 
-	fmt.Println(msg)
+	select {
+	case msgmychanndel := <-mychanndel:
+		fmt.Println(msgmychanndel)
+	case msgmychanndel2 := <-mychanndel2:
+		fmt.Println(msgmychanndel2)
+	}
 
 }
