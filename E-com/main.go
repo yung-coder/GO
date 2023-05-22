@@ -12,7 +12,6 @@ import (
 
 func main() {
 	port := os.Getenv("PORT")
-  fmt.Print("chandpur..");
 	if port == "" {
 		port = "8000"
 	}
