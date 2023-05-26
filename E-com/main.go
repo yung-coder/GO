@@ -2,17 +2,18 @@ package main
 
 import (
 	"E-com/controllers"
-	"E-com/database"
-	"fmt"
+	"log"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	"E-com/middleware"
+
+	"github.com/gin-gonic/gin"
+
+  "E-com/database"
 )
 
 func main() {
 	port := os.Getenv("PORT")
-	fmt.Print("resume");
 	if port == "" {
 		port = "8000"
 	}
@@ -29,4 +30,6 @@ func main() {
 	router.GET("/removeitem", app.RemoveItem())
 	router.GET("/cartcheckout", app.BuyFromCart())
 	router.GET("/instantbuy", app.InstantBuy())
+
+  log.Fatal(router.Run(":" + port));
 }
