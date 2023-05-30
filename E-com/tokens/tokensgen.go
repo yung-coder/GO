@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	jwt "github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -76,7 +76,7 @@ func ValidateToken(signedtoken string) (claims *SignedDetails, msg string) {
 		return
 	}
 
-	if claims.ExpiresAt < time.Now().Local().Unix() {
+	if claims.StandardClaims.ExpiresAt < time.Now().Local().Unix() {
 		msg = "token is already expired"
 		return
 	}
