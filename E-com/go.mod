@@ -3,6 +3,7 @@ module E-com
 go 1.20
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-playground/validator/v10 v10.11.2
 	go.mongodb.org/mongo-driver v1.11.6
