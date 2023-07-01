@@ -1,7 +1,6 @@
-package main
+	package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,17 +9,16 @@ import (
 	"sync"
 
 	"github.com/jcelliott/lumber"
-	"golang.org/x/text/collate"
 )
 
-const version = "1.0.0"
+const Version = "1.0.0"
 
 type (
 	Logger interface {
 		Fatal(string, ...interface{})
 		Error(string, ...interface{})
 		Warn(string, ...interface{})
-		Info(string, interface{})
+		Info(string, ...interface{})
 		Debug(string, ...interface{})
 		Trace(string, ...interface{})
 	}
@@ -56,46 +54,37 @@ func New(dir string, options *Options) (*Driver, error) {
 		log:     opts.Logger,
 	}
 
-	if _, err := os.Stat(dir); err != nil {
-		opts.Logger.Debug("Using '%s' ", dir)
+	if _, err := os.Stat(dir); err == nil {
+		opts.Logger.Debug("Using '%s' (database already exists)\n", dir)
 		return &driver, nil
 	}
 
-	opts.Logger.Debug("Creating the database at '%s'....", dir)
-	return &driver, os.Mkdir(dir, 0755)
-
+	opts.Logger.Debug("Creating the database at '%s'...\n", dir)
+	return &driver, os.MkdirAll(dir, 0755)
 }
 
-func stat(path string) (fi os.FileInfo, err error) {
-	if fi, err = os.Stat(path); os.IsNotExist(err) {
-		fi, err = os.Stat(path + ".json")
-	}
-	return
-}
-
-func (d *Driver) write(collection, resource string, v interface{}) error {
+func (d *Driver) Write(collection, resource string, v interface{}) error {
 	if collection == "" {
-		return fmt.Errorf("Missing collection no place to save record")
+		return fmt.Errorf("Missing collection - no place to save record!")
 	}
 
 	if resource == "" {
-		return fmt.Errorf("Missing resource - unable to save record")
+		return fmt.Errorf("Missing resource - unable to save record (no name)!")
 	}
 
-	mutex := d.getorCreateMitex(collection)
+	mutex := d.getOrCreateMutex(collection)
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	dir := filepath.Join(d.dir, collection)
-	fnPath := filepath.Join(dir, resource+".json")
-	tmpPath := fnPath + ".tmp"
+	fnlPath := filepath.Join(dir, resource+".json")
+	tmpPath := fnlPath + ".tmp"
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
 	b, err := json.MarshalIndent(v, "", "\t")
-
 	if err != nil {
 		return err
 	}
@@ -106,70 +95,82 @@ func (d *Driver) write(collection, resource string, v interface{}) error {
 		return err
 	}
 
-  return os.Rename(tmpPath, fnPath); 
+	return os.Rename(tmpPath, fnlPath)
 }
-
-
 
 func (d *Driver) Read(collection, resource string, v interface{}) error {
 
 	if collection == "" {
-		return fmt.Errorf("Missing collection no place to save record")
+		return fmt.Errorf("Missing collection - unable to read!")
 	}
 
 	if resource == "" {
-		return fmt.Errorf("Missing resource - unable to save record")
+		return fmt.Errorf("Missing resource - unable to read record (no name)!")
 	}
 
-   record := filepath.Join(d.dir , collection , resource);
+	record := filepath.Join(d.dir, collection, resource)
 
-  if _, err := stat(record); err != nil {
-     return err;
-  }
+	if _, err := stat(record); err != nil {
+		return err
+	}
 
-  b , err := ioutil.ReadFile(record + ".json");
+	b, err := ioutil.ReadFile(record + ".json")
+	if err != nil {
+		return err
+	}
 
-  if err != nil {
-     return err;
-  }
-
-  return json.Unmarshal(b , &v);
-
+	return json.Unmarshal(b, &v)
 }
 
-func (d* Driver) ReadAll(collection string)([]string , error) {
-  if collection == "" {
-      return nil, fmt.Errorf("Missing Collection");
-  }
+func (d *Driver) ReadAll(collection string) ([]string, error) {
 
-  dir := filepath.Join(d.dir , collection);
+	if collection == "" {
+		return nil, fmt.Errorf("Missing collection - unable to read")
+	}
+	dir := filepath.Join(d.dir, collection)
 
-  if _ , err := stat(dir); err != nil {
-     return nil , err;
-  }
-   
-  files, _ := ioutil.ReadDir(dir);
+	if _, err := stat(dir); err != nil {
+		return nil, err
+	}
 
-  var records []string;
+	files, _ := ioutil.ReadDir(dir)
 
-  for _ , file := range files {
-    b , err := ioutil.ReadFile(filepath.Join(dir, file.Name()));
+	var records []string
 
-    if err != nil {
-       return nil , err
-    }
+	for _, file := range files {
+		b, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
+		if err != nil {
+			return nil, err
+		}
 
-    records = append(records, string(b));
-  }
-  return records , nil;
-
+		records = append(records, string(b))
+	}
+	return records, nil
 }
 
-func (d *Driver) Delet() error {
+func (d *Driver) Delete(collection, resource string) error {
 
+	path := filepath.Join(collection, resource)
+	mutex := d.getOrCreateMutex(collection)
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	dir := filepath.Join(d.dir, path)
+
+	switch fi, err := stat(dir); {
+	case fi == nil, err != nil:
+		return fmt.Errorf("unable to find file or directory named %v\n", path)
+
+	case fi.Mode().IsDir():
+		return os.RemoveAll(dir)
+
+	case fi.Mode().IsRegular():
+		return os.RemoveAll(dir + ".json")
+	}
+	return nil
 }
 
-func (d *Driver) getorCreateMitex(collection string) *sync.Mutex {
+func (d *Driver) getOrCreateMutex(collection string) *sync.Mutex {
 
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -179,7 +180,15 @@ func (d *Driver) getorCreateMitex(collection string) *sync.Mutex {
 		m = &sync.Mutex{}
 		d.mutexes[collection] = m
 	}
+
 	return m
+}
+
+func stat(path string) (fi os.FileInfo, err error) {
+	if fi, err = os.Stat(path); os.IsNotExist(err) {
+		fi, err = os.Stat(path + ".json")
+	}
+	return
 }
 
 type Address struct {
@@ -206,13 +215,16 @@ func main() {
 	}
 
 	employees := []User{
-		{"Jhon", "23", "696969699", "Infosys", Address{"palampur", "hp", "india", "14352"}},
-		{"Jogi", "26", "6964569699", "Infosysh", Address{"delhi", "it", "india", "14332"}},
-		{"rock", "28", "696964799", "Infosysbb", Address{"up", "gp", "india", "14344"}},
+		{"John", "23", "23344333", "Myrl Tech", Address{"bangalore", "karnataka", "india", "410013"}},
+		{"Paul", "25", "23344333", "Google", Address{"san francisco", "california", "USA", "410013"}},
+		{"Robert", "27", "23344333", "Microsoft", Address{"bangalore", "karnataka", "india", "410013"}},
+		{"Vince", "29", "23344333", "Facebook", Address{"bangalore", "karnataka", "india", "410013"}},
+		{"Neo", "31", "23344333", "Remote-Teams", Address{"bangalore", "karnataka", "india", "410013"}},
+		{"Albert", "32", "23344333", "Dominate", Address{"bangalore", "karnataka", "india", "410013"}},
 	}
 
 	for _, value := range employees {
-		db.write("users", value.Name, User{
+		db.Write("users", value.Name, User{
 			Name:    value.Name,
 			Age:     value.Age,
 			Contact: value.Contact,
@@ -232,17 +244,17 @@ func main() {
 	for _, f := range records {
 		employeeFound := User{}
 		if err := json.Unmarshal([]byte(f), &employeeFound); err != nil {
-			fmt.Println("Errors", err)
+			fmt.Println("Error", err)
 		}
 		allusers = append(allusers, employeeFound)
 	}
+	fmt.Println((allusers))
 
-	if err := db.Delet("user", "jhon"); err != nil {
-		fmt.Println("Error", err)
-	}
+	// if err := db.Delete("users", "John"); err != nil {
+	// 	fmt.Println("Error", err)
+	// }
 
-	if err := db.DeletAll("user", ""); err != nil {
-		fmt.Println("Error", err)
-	}
-
+	if err := db.Delete("users", ""); err != nil {
+    fmt.Println("Error", err)
+	 }
 }
