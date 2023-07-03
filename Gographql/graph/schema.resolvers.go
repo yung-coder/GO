@@ -7,30 +7,30 @@ package graph
 import (
 	"context"
 	"fmt"
+	"gographql/Database"
 	"gographql/graph/model"
-  "gographql/Database"
 )
 
-var db = database.Connect();
+var db = database.Connect()
 
 // CreateJobListing is the resolver for the createJobListing field.
 func (r *mutationResolver) CreateJobListing(ctx context.Context, input model.CreateJobListingInput) (*model.JobListing, error) {
-	 return db.CreateJobListingInput(input) , nil
+	return db.CreateJobListingInput(input), nil
 }
 
 // UpdateJobListing is the resolver for the updateJobListing field.
 func (r *mutationResolver) UpdateJobListing(ctx context.Context, id string, input model.UpdateJobListingInput) (*model.JobListing, error) {
-	 return db.UpdateJobListingInput(id , input) , nil 
+	return db.UpdateJobListingInput(id, input), nil
 }
 
 // DeletJobListing is the resolver for the deletJobListing field.
 func (r *mutationResolver) DeletJobListing(ctx context.Context, id string) (*model.DeleteJobResponse, error) {
-  return db.deletJobListing(id) , nil
+	return db.deletJobListing(id), nil
 }
 
 // Jobs is the resolver for the jobs field.
 func (r *queryResolver) Jobs(ctx context.Context) ([]*model.JobListing, error) {
-	panic(fmt.Errorf("not implemented: Jobs - jobs"))
+	return db.GetJobs(), nil
 }
 
 // Job is the resolver for the job field.
