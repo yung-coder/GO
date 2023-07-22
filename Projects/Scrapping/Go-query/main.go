@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	blogTitles, err := GetLatestBlogTitles("https://erp.cgc.ac.in/Account/Login")
+	blogTitles, err := GetLatestBlogTitles("https://www.friends2support.org/inner/news/listDonatedBloodUsers.aspx");
 
 	if err != nil {
 		log.Println(err)
@@ -35,7 +35,7 @@ func GetLatestBlogTitles(url string) (string, error) {
 
 	titles := ""
 
-	doc.Find(".row").Each(func(i int, s *goquery.Selection) {
+	doc.Find("table").Each(func(i int, s *goquery.Selection) {
 		titles += "-" + s.Text() + "\n"
 	})
 
